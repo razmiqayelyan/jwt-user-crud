@@ -127,9 +127,16 @@ export const putUser =  async(req, res, next) => {
     }
 }
 
-export const deleteUser =  (req, res, next) => {
-    const {id} = req.params
-    res.send(`DELETE ${id}`);
+export const deleteUser =  async(req, res, next) => {
+    try {
+        const user = req.user
+        if(!user) return res.status(403).send("Not Authorized")
+        const response = await connection.promise().query("DELETE FROM Users WHERE Users.uuid = ?", [user.uuid])
+        res.send(`DELETED : ${JSON.stringify(user)}`);
+        
+    } catch (error) {
+        res.status(404).send(error.message)
+    }
 }
 
 
