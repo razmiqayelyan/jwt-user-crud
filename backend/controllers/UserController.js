@@ -129,11 +129,18 @@ export const putUser =  async(req, res, next) => {
 
 export const deleteUser =  async(req, res, next) => {
     try {
+        const {password} = req.body
         const user = req.user
         if(!user) return res.status(403).send("Not Authorized")
+
+        const isExist = await connection.promise().query("SELECT Users.password FROM Users WHERE uuid=?", [user.uuid])
+        if(isExist[0][0] && await bcrypt.compare(password ,isExist[0][0].password)){
+
         const response = await connection.promise().query("DELETE FROM Users WHERE Users.uuid = ?", [user.uuid])
         res.send(`DELETED : ${JSON.stringify(user)}`);
-        
+        }else{
+            res.status(404).send("UNCORRECT DATA")
+        }        
     } catch (error) {
         res.status(404).send(error.message)
     }
