@@ -33,7 +33,7 @@ export const loginUser = async(req, res, next) => {
         const {password:myPassword, uuid} = user[0][0] 
         const matching = await bcrypt.compare(password, myPassword)
         if(!matching) return res.status(403).send("Uncorrect Data")
-        const token = await jwt.sign({uuid}, process.env.SECRET, { expiresIn: '1d' })
+        const token = await jwt.sign({uuid}, process.env.SECRET, { expiresIn: process.env.TOKEN_DATE })
         const {email, username:myUsername, full_name, phone} = user[0][0]
         res.user = {email, myUsername, full_name, phone}
         res.send({token})
@@ -51,7 +51,7 @@ export const registerUser =  async(req, res, next) => {
         const uuid = await bcrypt.hash(username, 10)
         const link = `${Math.random()*10}${uuid.split('/')[0]}`
         if(!uuid)res.status(400).send("Please try again")
-        const token = await jwt.sign({uuid}, process.env.SECRET, { expiresIn: '3d' })
+        const token = await jwt.sign({uuid}, process.env.SECRET, { expiresIn: process.env.TOKEN_DATE })
         const response = await connection.promise().query("INSERT INTO Users (uuid, email, username, full_name, password, link, phone) VALUES (?, ? ,? ,?, ?, ? ,? )", [uuid, email, username, full_name? full_name:"NULL", userPass, link, phone?phone:"NULL"])
         // const response = await connection.promise().query("SELECT Users.username, Friends.friend FROM Users INNER JOIN Friends ON Friends.username=Users.username WHERE Friends.friend='razmiqayelyan'")   
         sendEmailtoUser(link, email, username)
