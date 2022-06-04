@@ -19,11 +19,6 @@ export const verifyToken = async(req, res, next) => {
     return next();
   };
 
-export const isToken =  async(req, res, next) => {
-    const existToken = req.body.token || req.query.token || req.headers["x-access-token"]; 
-    if(existToken && await jwt.verify(existToken, process.env.SECRET)) return res.status(403).send("USER ALREADY AUTHORIZED")
-    return next()
-}
 
 export const loginUser = async(req, res, next) => {
     try {
