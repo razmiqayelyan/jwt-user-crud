@@ -1,7 +1,7 @@
 import { connection } from "../config/db.js";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
-import { sendEmailtoUser } from "./EmailSendler.js";
+import { getNewPass, sendEmailtoUser, verifyPassword } from "./EmailSendler.js";
 
 export const verifyToken = async(req, res, next) => {
     const token = req.body.token || req.query.token || req.headers["x-access-token"];
@@ -19,6 +19,11 @@ export const verifyToken = async(req, res, next) => {
     return next();
   };
 
+export const isToken =  async(req, res, next) => {
+    const existToken = req.body.token || req.query.token || req.headers["x-access-token"]; 
+    if(existToken && await jwt.verify(existToken, process.env.SECRET)) return res.status(403).send("USER ALREADY AUTHORIZED")
+    return next()
+}
 
 export const loginUser = async(req, res, next) => {
     try {
@@ -151,10 +156,50 @@ export const deleteUser =  async(req, res, next) => {
 export const confirmUser = async(req, res, next) => {
     try {
         const {id} = req.params
+        if(!id) return res.status(403).send("ID NOT FOUND")
         const response = await connection.promise().query("UPDATE Users SET confirmed = 'true' WHERE Users.link = ?;", [id])
         if(response[0].info.includes("Changed: 0")) return res.status(404).send("Uncorrect Confirmation Link")
 
         res.send({confirmed:true})
+    } catch (error) {
+        res.status(400).send(error.message)
+    }
+}
+
+export const resetPass = async(req, res, next) => {
+    try {
+        const {username} = req.body
+        if(!username) return res.status(403).send("Enter Username for Reset Password")
+        const link = Math.random().toString().split('.')[1] + Date.now()
+        const response = await connection.promise().query("UPDATE Users SET link = ? WHERE Users.username = ?;", [link ,username])
+        if(response[0].info.includes("Changed: 0")) return res.status(404).send("Uncorrect Username")
+        const isExist = await connection.promise().query("SELECT Users.email FROM Users WHERE username=?", [username])
+        if(!isExist[0][0])return res.status(403).send("Email Not Found")
+        verifyPassword(link, isExist[0][0].email, username)
+        setTimeout(async() => {
+            const response = await connection.promise().query("UPDATE Users SET link = ? WHERE Users.username = ?;", ["NULL" ,username])
+        }, 1000*600)
+        res.send("Email Sended Successfully")
+    } catch (error) {  
+        res.status(404).send(error.message)
+        
+    }
+}
+
+export const resetByEmail = async(req, res, next) => {
+    try {
+        const {link} = req.params
+        if(!link) return res.status(403).send("LINK NOT FOUND")
+        const isExist = await connection.promise().query("SELECT Users.username, Users.email FROM Users WHERE link=?", [link])
+        if(!isExist[0][0])return res.status(403).send("INVALID LINK")
+        const newPass = Math.random().toString()
+        const newPassHashed = await bcrypt.hash(newPass, 10)
+        const response = await connection.promise().query("UPDATE Users SET password = ? WHERE Users.username = ?;", [ newPassHashed,isExist[0][0].username])
+        getNewPass(isExist[0][0].email,  isExist[0][0].username, newPass)
+        setTimeout(async() => {
+            const response = await connection.promise().query("UPDATE Users SET link = ? WHERE Users.username = ?;", ["NULL" ,isExist[0][0].username])
+        }, 5000)
+        res.send(newPass)
     } catch (error) {
         res.status(400).send(error.message)
     }
