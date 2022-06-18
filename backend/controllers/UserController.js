@@ -47,6 +47,15 @@ export const loginUser = async(req, res, next) => {
     }
 }
 
+export const verifyEmail = async(req, res) => {
+    const {email, username, uuid} = req.user
+    const myUser = await connection.promise().query("SELECT  Users.confirmed, Users.link FROM Users WHERE uuid=?", [uuid])
+    if(!myUser[0][0].confirmed || !myUser[0][0].link) return res.status(403).send("User Not Found")
+    else if(myUser[0][0].confirmed !== 'false') return res.status(403).send("Email Already Confirmed")
+    sendEmailtoUser(myUser[0][0].link, email, username)
+    res.send({message:"Email Sended Successfully"})
+}
+
 export const registerUser =  async(req, res, next) => {
     try {
         const {username, email, password, full_name, phone} = req.body
@@ -107,7 +116,7 @@ export const putUser =  async(req, res, next) => {
             if(user.email === newEmail) return res.status(404).send("SAME EMAIL")
             const isExist = await connection.promise().query("SELECT * FROM Users WHERE email=?", [newEmail])
             if(isExist[0][0]) return res.status(404).send("THIS EMAIL IS EXIST")
-            const response = await connection.promise().query("UPDATE Users SET email = ? WHERE Users.uuid = ?;", [newEmail, user.uuid])
+            const response = await connection.promise().query("UPDATE Users SET email = ?, confirmed = 'false'  WHERE Users.uuid = ?;", [newEmail, user.uuid])
             return res.send({email:newEmail})
         }
 
@@ -179,8 +188,8 @@ export const resetPass = async(req, res, next) => {
         const link = Math.random().toString().split('.')[1] + Date.now()
         const response = await connection.promise().query("UPDATE Users SET link = ? WHERE Users.username = ?;", [link ,username])
         if(response[0].info.includes("Changed: 0")) return res.status(404).send("Uncorrect Username")
-        const isExist = await connection.promise().query("SELECT Users.email FROM Users WHERE username=?", [username])
-        if(!isExist[0][0])return res.status(403).send("Email Not Found")
+        const isExist = await connection.promise().query("SELECT Users.email, Users.confirmed FROM Users WHERE username=?", [username])
+        if(!isExist[0][0] || isExist[0][0].confirmed !== 'true') return res.status(403).send("Email Not Found")
         verifyPassword(link, isExist[0][0].email, username)
         setTimeout(async() => {
             const response = await connection.promise().query("UPDATE Users SET link = ? WHERE Users.username = ?;", ["NULL" ,username])
@@ -196,8 +205,8 @@ export const resetByEmail = async(req, res, next) => {
     try {
         const {link} = req.params
         if(!link) return res.status(403).send("LINK NOT FOUND")
-        const isExist = await connection.promise().query("SELECT Users.username, Users.email FROM Users WHERE link=?", [link])
-        if(!isExist[0][0])return res.status(403).send("INVALID LINK")
+        const isExist = await connection.promise().query("SELECT Users.username, Users.email, Users.confirmed FROM Users WHERE link=?", [link])
+        if(!isExist[0][0] || isExist[0][0].confirmed !== 'true') return res.status(403).send("INVALID LINK")
         const newPass = Math.random().toString()
         const newPassHashed = await bcrypt.hash(newPass, 10)
         const response = await connection.promise().query("UPDATE Users SET password = ? WHERE Users.username = ?;", [ newPassHashed,isExist[0][0].username])
