@@ -19,6 +19,15 @@ export const verifyToken = async(req, res, next) => {
     return next();
   };
 
+export const userData = (req, res, next) => {
+    try {
+        if(!req.user) return res.status(403).send("USER NOT FOUND")
+        res.send({user: req.user})
+    } catch (error) {
+        res.status(403).send(error.message)
+    }
+}
+
 
 export const loginUser = async(req, res, next) => {
     try {
@@ -29,9 +38,9 @@ export const loginUser = async(req, res, next) => {
         const matching = await bcrypt.compare(password, myPassword)
         if(!matching) return res.status(403).send("Uncorrect Data")
         const token = await jwt.sign({uuid}, process.env.SECRET, { expiresIn: process.env.TOKEN_DATE })
-        const {email, username:myUsername, full_name, phone} = user[0][0]
+        const {email, username:myUsername, full_name, phone } = user[0][0]
         res.user = {email, myUsername, full_name, phone}
-        res.send({token})
+        res.send({uuid, token ,email, myUsername, full_name, phone})
        
     } catch (error) {
         res.status(403).send(error.message)
@@ -50,7 +59,9 @@ export const registerUser =  async(req, res, next) => {
         const response = await connection.promise().query("INSERT INTO Users (uuid, email, username, full_name, password, link, phone) VALUES (?, ? ,? ,?, ?, ? ,? )", [uuid, email, username, full_name? full_name:"NULL", userPass, link, phone?phone:"NULL"])
         // const response = await connection.promise().query("SELECT Users.username, Friends.friend FROM Users INNER JOIN Friends ON Friends.username=Users.username WHERE Friends.friend='razmiqayelyan'")   
         sendEmailtoUser(link, email, username)
-        res.send({token});
+        res.send({
+            uuid, email, username, full_name:full_name? full_name:"NULL", phone:phone?phone:"NULL", token
+        });
     } catch (error) {
         res.status(400).send(error.message)
     }    
