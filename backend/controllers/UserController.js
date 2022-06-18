@@ -48,12 +48,18 @@ export const loginUser = async(req, res, next) => {
 }
 
 export const verifyEmail = async(req, res) => {
-    const {email, username, uuid} = req.user
-    const myUser = await connection.promise().query("SELECT  Users.confirmed, Users.link FROM Users WHERE uuid=?", [uuid])
-    if(!myUser[0][0].confirmed || !myUser[0][0].link) return res.status(403).send("User Not Found")
-    else if(myUser[0][0].confirmed !== 'false') return res.status(403).send("Email Already Confirmed")
-    sendEmailtoUser(myUser[0][0].link, email, username)
-    res.send({message:"Email Sended Successfully"})
+    try {
+     
+        const {email, username, uuid} = req.user
+        const myUser = await connection.promise().query("SELECT  Users.confirmed, Users.link FROM Users WHERE uuid=?", [uuid])
+        if(!myUser[0][0].confirmed || !myUser[0][0].link) return res.status(403).send("User Not Found")
+        else if(myUser[0][0].confirmed !== 'false') return res.status(403).send("Email Already Confirmed")
+        sendEmailtoUser(myUser[0][0].link, email, username)
+        res.send({message:"Email Sended Successfully"})
+        
+    } catch (error) {
+        res.status(400).send(error.message)
+    }
 }
 
 export const registerUser =  async(req, res, next) => {
