@@ -10,9 +10,9 @@ export const Prediction = async(req, res) => {
         // res.send(myCoefficient[0][0])
         const optimal_1 = parseInt((myCoefficient[0][0].coefficient * parseFloat(playerPrediction) - 1) / (myCoefficient[0][0].coefficient - 1)* parseInt(bank))
         const optimal_2 = parseInt(((myCoefficient[0][0].coefficient - 0.01) * parseFloat(playerPrediction) - 1) / ((myCoefficient[0][0].coefficient - 0.01) - 1) * parseInt(bank))
-        const optimal = parseInt(((optimal_2) + ((optimal_1 - optimal_2) * 0.7 )) / 10) * 10 
-        if(((optimal_2) + ((optimal_1 - optimal_2) * 0.7)) < 9 && ((optimal_2) + ((optimal_1 - optimal_2) * 0.7)) >= 1) return res.send({optimal:parseInt(((optimal_2) + ((optimal_1 - optimal_2) * 0.7)))})
-        else if(optimal < 0 ) return res.send({optimal:"Too Risky Bet"})
+        const optimal = parseInt(optimal_2 + ((optimal_1 - optimal_2) * 0.7))
+        if(optimal < 0 ) return res.send({optimal:"Too Risky Bet"}) 
+        // res.send({optimal:parseInt(((optimal_2) + ((optimal_1 - optimal_2) * 0.7)))})
         res.send({optimal})   
     } catch (error) {
         res.status(400).send(error.message)
