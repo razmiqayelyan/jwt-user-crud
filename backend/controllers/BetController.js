@@ -4,13 +4,13 @@ import { data } from "../config/db.js"
 export const Prediction = async(req, res) => {
     try {
         const {playerPrediction, positionID, bank} = req.body
-        if(playerPrediction > 1) return res.status(404).send("Player Prediction cannot be grather then 1")
+        if(playerPrediction >= 1) return res.status(404).send("Player Prediction cannot be grather then 1")
         if (!playerPrediction || isNaN(playerPrediction)) return res.status(400).send("Uncorrect Value for Player Prediction")
         const myCoefficient = await data.promise().query("SELECT  Positions.coefficient FROM Positions WHERE id=?", [positionID])
         if(!myCoefficient[0][0]) return res.status(404).send("Coefficient Undefined")
         // res.send(myCoefficient[0][0])
-        const optimal_1 = parseInt((myCoefficient[0][0].coefficient * parseFloat(playerPrediction) - 1) / (myCoefficient[0][0].coefficient - 1)* parseInt(bank))
-        const optimal_2 = parseInt(((myCoefficient[0][0].coefficient - 0.01) * parseFloat(playerPrediction) - 1) / ((myCoefficient[0][0].coefficient - 0.01) - 1) * parseInt(bank))
+        const optimal_1 = parseInt(((myCoefficient[0][0].coefficient * parseFloat(playerPrediction) - 1) / (myCoefficient[0][0].coefficient - 1)* parseInt(bank)))
+        const optimal_2 = parseInt((((myCoefficient[0][0].coefficient - 0.01) * parseFloat(playerPrediction) - 1) / ((myCoefficient[0][0].coefficient - 0.01) - 1) * parseInt(bank)))
         const optimal = parseInt(optimal_2 + ((optimal_1 - optimal_2) * 0.7))
         if(optimal < 0 ) return res.send({optimal:"Too Risky Bet"}) 
         // res.send({optimal:parseInt(((optimal_2) + ((optimal_1 - optimal_2) * 0.7)))})
