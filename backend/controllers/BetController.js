@@ -4,7 +4,7 @@ import { data } from "../config/db.js"
 export const Prediction = async(req, res) => {
     try {
         const {playerPrediction, positionID, bank} = req.body
-        if(playerPrediction >= 1) return res.status(404).send("Player Prediction cannot be grather then 1")
+        if(playerPrediction >= 1) return res.status(404).send("Player Prediction cannot be grather or equal 1")
         if (!playerPrediction || isNaN(playerPrediction)) return res.status(400).send("Uncorrect Value for Player Prediction")
         const myCoefficient = await data.promise().query("SELECT  Positions.coefficient FROM Positions WHERE id=?", [positionID])
         if(!myCoefficient[0][0]) return res.status(404).send("Coefficient Undefined")
