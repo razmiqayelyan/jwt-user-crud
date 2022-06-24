@@ -1,5 +1,5 @@
 import express from "express"
-import { Prediction } from "../controllers/BetController.js"
+import { Prediction, selectedPredictions } from "../controllers/BetController.js"
 import { verifyToken } from "../controllers/UserController.js"
 
 
@@ -7,3 +7,5 @@ export const BetRouter = express.Router()
 
 
 BetRouter.route("/").post(verifyToken, Prediction)
+BetRouter.route("/list").post(verifyToken, selectedPredictions)
+
