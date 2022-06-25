@@ -1,26 +1,26 @@
 import { data } from "../config/db.js"
 
-const Mathematics = async({playerPrediction, positionID, bank}) => {
-    let status = 'OK'
-    const myBank = parseInt(bank)
-    const myPositionID = parseInt(positionID)
-    const myPlayerPrediction = parseFloat(playerPrediction)
-    if(playerPrediction >= 1 || playerPrediction < 0) return {passive : null, status : "Player Prediction Error"}
-    if (!myPlayerPrediction || isNaN(myPlayerPrediction)) return  {passive : null, status : "NaN"}
-    const myCoefficient = await data.promise().query("SELECT  Positions.coefficient FROM Positions WHERE id=?", [myPositionID])
-    if(!myCoefficient) return {passive : null, status : undefined}
-    // res.send(myCoefficient[0][0])    
-    const passive_1 = parseInt(((myCoefficient[0][0].coefficient * myPlayerPrediction - 1) / (myCoefficient[0][0].coefficient - 1)* myBank))
-    const passive_2 = parseInt((((myCoefficient[0][0].coefficient - 0.01) * myPlayerPrediction - 1) / ((myCoefficient[0][0].coefficient - 0.01) - 1) * myBank))
-    const passive = parseInt(passive_2 + ((passive_1 - passive_2) * 0.7))
-    // if(passive < myBank ) return res.send({passive:"Too Risky Bet"}) 
-    if(passive < myBank * 0.04) status = "Too Risky Bet"
-    else if (passive > myBank * 0.1) status = 'Select More Games'
-    return {
-        passive,
-        status
-    }
-}
+// const Mathematics = async({playerPrediction, positionID, bank}) => {
+//     let status = 'OK'
+//     const myBank = parseInt(bank)
+//     const myPositionID = parseInt(positionID)
+//     const myPlayerPrediction = parseFloat(playerPrediction)
+//     if(playerPrediction >= 1 || playerPrediction < 0) return {passive : null, status : "Player Prediction Error"}
+//     if (!myPlayerPrediction || isNaN(myPlayerPrediction)) return  {passive : null, status : "NaN"}
+//     const myCoefficient = await data.promise().query("SELECT  Positions.coefficient FROM Positions WHERE id=?", [myPositionID])
+//     if(!myCoefficient) return {passive : null, status : undefined}
+//     // res.send(myCoefficient[0][0])    
+//     const passive_1 = parseInt(((myCoefficient[0][0].coefficient * myPlayerPrediction - 1) / (myCoefficient[0][0].coefficient - 1)* myBank))
+//     const passive_2 = parseInt((((myCoefficient[0][0].coefficient - 0.01) * myPlayerPrediction - 1) / ((myCoefficient[0][0].coefficient - 0.01) - 1) * myBank))
+//     const passive = parseInt(passive_2 + ((passive_1 - passive_2) * 0.7))
+//     // if(passive < myBank ) return res.send({passive:"Too Risky Bet"}) 
+//     if(passive < myBank * 0.04) status = "Too Risky Bet"
+//     else if (passive > myBank * 0.1) status = 'Select More Games'
+//     return {
+//         passive,
+//         status
+//     }
+// }
 
 const MathematicsList = async({playerPrediction, coefficient, bank}) => {
     let status = 'OK'
@@ -46,7 +46,7 @@ const MathematicsList = async({playerPrediction, coefficient, bank}) => {
 
 export const  selectedPredictions = async(req, res) => {
     try {
-        const {playerPrediction, positionIDs, bank} = req.body 
+        const {positionIDs, bank} = req.body 
         if(!positionIDs || !Array.isArray(positionIDs) || positionIDs.length < 1)  return res.status(404).send("Position ID's cannot be empty")
         // const possiveList = await Mathematics(playerPrediction, 4, 20000)
         // const possiveList =  await Mathematics({playerPrediction, positionID:4, bank})
@@ -56,14 +56,24 @@ export const  selectedPredictions = async(req, res) => {
             const results = []
             await Positions.map(async(position) => { 
                 try {
-                    const {passive, status} = await MathematicsList({playerPrediction, coefficient:position.coefficient, bank})
+                    const {passive, status} = await MathematicsList({playerPrediction:position.analitics_prediction, coefficient:position.coefficient, bank})
                     results.push({passive, status})   
                 } catch (error) {
                     res.status(400).send(error.message)
                 }
             })
             resolve(results)
-        }).then((results) => res.send(results))
+        }).then((results) => {
+            const acc = results.reduce((acc, elem) => {
+                if(!isNaN(elem.passive)){
+                    acc += parseInt(elem.passive)
+                }
+                return acc
+        }, 0)
+        const optimals = results.map((el) => ({optimal:parseInt(((parseInt(bank) / acc) * el.passive)) ,...el}))
+        res.send(optimals)
+    }
+        )
      
     } catch (error) {
         res.status(400).send(error.message)

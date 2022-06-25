@@ -6,6 +6,6 @@ import { verifyToken } from "../controllers/UserController.js"
 export const BetRouter = express.Router()
 
 
-BetRouter.route("/").post(verifyToken, Prediction)
-BetRouter.route("/list").post(verifyToken, selectedPredictions)
+BetRouter.route("/").post(verifyToken, selectedPredictions)
+// BetRouter.route("/list").post(verifyToken, selectedPredictions)
 
