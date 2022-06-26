@@ -4,6 +4,7 @@ import { connection } from "../../config/db.js"
 export const setCount = ({bank, optional}) => {
         if(bank * 0.2 < optional.optional) return ({...optional, status:"Add More Games", count:5})
         else if (bank * 0.13 < optional.optimal) return ({...optional, status:"Add More Games", count:3})
+        else if (bank * 0.1 < optional.optimal) return ({...optional, status:"Add More Games", count:1})
         else{ 
              return ({...optional, status:"OK", count:0})
         } 
