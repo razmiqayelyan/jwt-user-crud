@@ -19,7 +19,7 @@ export const  Predictions = async(req, res) => {
                         const optimals = getOptimals({results, bank, acc})
                         return optimals})
               .then((optimals) => {
-                return optimals.map((optional) => setCount({bank, optional}))
+                return optimals.map((optimal) => setCount({bank, optimal}))
               }).then((optimals) => savePredictions({optimals, user:req.user, positionIDs}))
               .then((optimals) => res.send(optimals))
     } catch (error) {

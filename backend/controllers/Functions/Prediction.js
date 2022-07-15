@@ -1,15 +1,17 @@
 import { connection } from "../../config/db.js"
 
 
-export const setCount = ({bank, optional}) => {
-        if(bank * 0.2 < optional.optional) return ({...optional, status:"Add More Games", count:5})
-        else if (bank * 0.13 < optional.optimal) return ({...optional, status:"Add More Games", count:3})
-        else if (bank * 0.1 < optional.optimal) return ({...optional, status:"Add More Games", count:1})
+// this function for checking optiaml's value and adding status, value in object 
+export const setCount = ({bank, optimal}) => {
+        if(bank * 0.2 < optimal.optimal) return ({...optimal, status:"Add More Games", count:5})
+        else if (bank * 0.13 < optimal.optimal) return ({...optimal, status:"Add More Games", count:3})
+        else if (bank * 0.1 < optimal.optimal) return ({...optimal, status:"Add More Games", count:1})
         else{ 
-             return ({...optional, status:"OK", count:0})
+             return ({...optimal, status:"OK", count:0})
         } 
 } 
 
+// for parsing strings to integer of float
 export const intParser = ({analitics_prediction=0, coefficient=0, bank=0}) => {
     const myBank = parseInt(bank)
     const myCoefficient = parseFloat(coefficient)
@@ -22,14 +24,14 @@ export const intParser = ({analitics_prediction=0, coefficient=0, bank=0}) => {
 }
 
 
-
+// checking varibles value before parsing, in string only numbers or no
 export const MathValidator = ({myAnalitics_prediction, myCoefficient}) => {
     if (!myAnalitics_prediction || isNaN(myAnalitics_prediction)) return  {passive : null, status : "NaN"}
     else if(myAnalitics_prediction >= 1 || myAnalitics_prediction < 0 || !myCoefficient) return {passive : null, status : undefined}
 }
 
 
-
+// our Passive startegy
 export const MathematicsList = async({analitics_prediction, coefficient, bank}) => {
 
     const  { myBank, myCoefficient, myAnalitics_prediction } = intParser({analitics_prediction, coefficient, bank})
@@ -42,7 +44,7 @@ export const MathematicsList = async({analitics_prediction, coefficient, bank}) 
 }
 
 
-
+// this functionality doesnt finished for now, we want to save users strategy after buying
 export const savePredictions = async({optimals, user}) => {
     const moreGames = optimals.filter((optimal) => optimal.status !== 'OK' && optimal.count !== 0)
     if(!moreGames || moreGames.length < 1) await console.log(optimals, user)
@@ -51,14 +53,14 @@ export const savePredictions = async({optimals, user}) => {
 
 
 
-
+// request to SQL db for data
 export const getPositions = async({positionIDs}) => {
     const Positions = await connection.promise().query("SELECT * FROM Positions WHERE id IN (?)", [[...positionIDs]])
     return Positions[0]
 }
 
 
-
+// map all Positions and call MathematicsList function for each position
 export const getResults = async({Positions, bank}) => {
      const results = []
             await Positions.map(async(position) => { 
@@ -74,7 +76,7 @@ export const getResults = async({Positions, bank}) => {
 
 
 
-
+// get Sum of all Positions Results, for getting status and status in setCount function 
 export const resultsSum = ({results}) => {
     const acc = results.reduce((acc, elem) => {
         if(!isNaN(elem.passive)){
@@ -86,12 +88,8 @@ export const resultsSum = ({results}) => {
 }
 
 
-
+// get Optimal for each Position
 export const getOptimals = ({results, bank, acc}) => {
     const optimals = results.map((el) => ({optimal:parseInt(((parseInt(bank) / acc) * el.passive)) ,...el}))
     return optimals
 }
-
-
-
-

@@ -7,5 +7,4 @@ export const BetRouter = express.Router()
 
 
 BetRouter.route("/").post(verifyToken, Predictions)
-// BetRouter.route("/list").post(verifyToken, selectedPredictions)
 
