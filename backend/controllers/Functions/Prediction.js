@@ -42,12 +42,21 @@ export const MathematicsList = async({analitics_prediction, coefficient, bank}) 
     const passive = parseInt(passive_2 + ((passive_1 - passive_2) * 0.7))
     return {passive}
 }
+// our Aggressive startegy
+export const MathematicsListAggressive = async({analitics_prediction, coefficient, bank}) => {
+
+    const  { myBank, myCoefficient, myAnalitics_prediction } = intParser({analitics_prediction, coefficient, bank})
+    const validated = MathValidator({myAnalitics_prediction, myCoefficient})
+    if(validated) return
+    const aggressive = parseInt(((myCoefficient * myAnalitics_prediction - 1) / (myCoefficient - 1)* myBank))
+    return {aggressive}
+}
 
 
 // this functionality doesnt finished for now, we want to save users strategy after buying
 export const savePredictions = async({optimals, user}) => {
     const moreGames = optimals.filter((optimal) => optimal.status !== 'OK' && optimal.count !== 0)
-    if(!moreGames || moreGames.length < 1) await console.log(optimals, user)
+    if(!moreGames || moreGames.length < 1)
     return optimals
 }
 
@@ -61,12 +70,17 @@ export const getPositions = async({positionIDs}) => {
 
 
 // map all Positions and call MathematicsList function for each position
-export const getResults = async({Positions, bank}) => {
+export const getResults = async({Positions, bank, strategy}) => {
      const results = []
             await Positions.map(async(position) => { 
                 try {
+                    if(strategy === 'Passive'){
                     const {passive, status} = await MathematicsList({analitics_prediction:position.analitics_prediction, coefficient:position.coefficient, bank})
-                    results.push({passive, status})   
+                    results.push({passive, status})}
+                    else if(strategy === 'Aggressive'){
+                        const {aggressive, status} = await MathematicsListAggressive({analitics_prediction:position.analitics_prediction, coefficient:position.coefficient, bank})
+                        results.push({aggressive, status})
+                    }
                 } catch (error) {
                     return 
                 }
@@ -78,6 +92,7 @@ export const getResults = async({Positions, bank}) => {
 
 // get Sum of all Positions Results, for getting status and status in setCount function 
 export const resultsSum = ({results}) => {
+    if(results[0].passive){
     const acc = results.reduce((acc, elem) => {
         if(!isNaN(elem.passive)){
             acc += parseInt(elem.passive)
@@ -86,10 +101,27 @@ export const resultsSum = ({results}) => {
 }, 0)
     return acc
 }
+    else if(results[0].aggressive){
+        const acc = results.reduce((acc, elem) => {
+            if(!isNaN(elem.aggressive)){
+                acc += parseInt(elem.aggressive)
+            }
+            return acc
+    }, 0)
+        return acc
+        
+    }
+}
 
 
 // get Optimal for each Position
 export const getOptimals = ({results, bank, acc}) => {
-    const optimals = results.map((el) => ({optimal:parseInt(((parseInt(bank) / acc) * el.passive)) ,...el}))
-    return optimals
+    if(results[0].passive){
+        const optimals = results.map((el) => ({optimal:parseInt(((parseInt(bank) / acc) * el.passive)) ,...el}))
+        return optimals
+    }
+    else if(results[0].aggressive){
+        const optimals = results.map((el) => ({optimal:parseInt(((parseInt(bank) / acc) * el.aggressive)) ,...el}))
+        return optimals
+    }
 }
